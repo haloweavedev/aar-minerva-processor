@@ -1,3 +1,4 @@
+// src/types/wordpress.ts
 export interface BookReviewComment {
   commentId: string;
   commentAuthor: string;
@@ -11,9 +12,9 @@ export interface BookReviewMetadata {
   authorLastName: string;
   bookGrade: string;
   bookSensuality: string;
-  publishedDate: string;  // Original publication date of the book
+  publishedDate: string;
   amazonUrl: string;
-  asin: string;          // Adding ASIN
+  asin?: string;
   featuredImage: string;
   reviewerName: string;
   bookTypes: string[];
@@ -26,7 +27,7 @@ export interface BookReview {
   id: string;
   title: string;
   content: string;
-  date: string;          // Post publication date
+  date: string;
   bookMetadata: BookReviewMetadata;
 }
 
@@ -50,13 +51,41 @@ export interface ProcessedReview {
     postDate: string;
     bookTypes: string[];
     reviewTags: string[];
-    setting: {
-      time: string;
-      location: string;
-    };
+    content: string;
     comments: {
       count: number;
       latest: BookReviewComment[];
     };
   };
+}
+
+// src/types/pinecone.ts
+export interface ReviewMetadata {
+  postId: string;
+  title: string;
+  text: string;
+  bookTitle: string;
+  authorName: string;
+  reviewerName: string;
+  grade: string;
+  url: string;
+  amazonUrl: string;
+  asin: string;
+  featuredImage: string;
+  publishDate: string;
+  postDate: string;
+  chunkType: 'review' | 'comments' | 'metadata';
+  sensuality: string;
+  bookTypes: string[];
+  reviewTags: string[];
+  comments: {
+    count: number;
+    latest: BookReviewComment[];
+  };
+}
+
+export interface PineconeVector {
+  id: string;
+  values: number[];
+  metadata: ReviewMetadata;
 }

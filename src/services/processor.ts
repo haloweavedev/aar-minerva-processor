@@ -1,12 +1,5 @@
-// src/services/processor.ts
 import { OpenAI } from 'openai';
 import type { ProcessedReview } from '../types/wordpress.js';
-
-// Define a type for the comment if not already defined
-interface Comment {
-  commentAuthor: string;
-  commentContent: string;
-}
 
 export class ContentProcessor {
   private openai: OpenAI;
@@ -22,17 +15,23 @@ export class ContentProcessor {
     chunks.push({
       text: `BOOK REVIEW: ${review.metadata.bookTitle} by ${review.metadata.authorName}
 GRADE: ${review.metadata.grade}
+SENSUALITY: ${review.metadata.sensuality}
+BOOK TYPES: ${review.metadata.bookTypes.join(', ')}
+TAGS: ${review.metadata.reviewTags.join(', ')}
+REVIEWER: ${review.metadata.reviewerName}
+PUBLISHED: ${review.metadata.publishDate}
+REVIEW DATE: ${review.metadata.postDate}
 REVIEW CONTENT: ${review.content}`,
       metadata: {
         ...review.metadata,
         chunkType: 'review',
-      }
+      },
     });
 
     // Comments chunk (if there are comments)
     if (review.metadata.comments.count > 0) {
       const commentsText = review.metadata.comments.latest
-        .map((comment: Comment) => `${comment.commentAuthor}: ${comment.commentContent}`)
+        .map((comment) => `${comment.commentAuthor}: ${comment.commentContent}`)
         .join('\n\n');
 
       chunks.push({
@@ -41,7 +40,7 @@ ${commentsText}`,
         metadata: {
           ...review.metadata,
           chunkType: 'comments',
-        }
+        },
       });
     }
 
@@ -50,13 +49,20 @@ ${commentsText}`,
       text: `BOOK INFO: ${review.metadata.bookTitle}
 Author: ${review.metadata.authorName}
 Published: ${review.metadata.publishDate}
-Setting: ${review.metadata.setting.time}, ${review.metadata.setting.location}
+Posted: ${review.metadata.postDate}
+Grade: ${review.metadata.grade}
 Sensuality Rating: ${review.metadata.sensuality}
-Grade: ${review.metadata.grade}`,
+Book Types: ${review.metadata.bookTypes.join(', ')}
+Tags: ${review.metadata.reviewTags.join(', ')}
+Review Link: ${review.metadata.url}
+Buy Link: ${review.metadata.amazonUrl}
+ASIN: ${review.metadata.asin}
+Featured Image: ${review.metadata.featuredImage}
+Reviewer: ${review.metadata.reviewerName}`,
       metadata: {
         ...review.metadata,
         chunkType: 'metadata',
-      }
+      },
     });
 
     return chunks;
@@ -66,11 +72,11 @@ Grade: ${review.metadata.grade}`,
     try {
       const response = await this.openai.embeddings.create({
         model: "text-embedding-3-small",
-        input: chunks.map(chunk => chunk.text),
+        input: chunks.map((chunk) => chunk.text),
         encoding_format: "float",
       });
 
-      return response.data.map(embedding => embedding.embedding);
+      return response.data.map((embedding) => embedding.embedding);
     } catch (error) {
       console.error('Error creating embeddings:', error);
       throw error;

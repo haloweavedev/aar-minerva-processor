@@ -1,4 +1,6 @@
+// src/services/pinecone.ts
 import { Pinecone } from '@pinecone-database/pinecone';
+import type { ReviewMetadata } from '../types/pinecone.js';
 
 export class PineconeService {
   private pineconeClient: Pinecone;
@@ -25,24 +27,38 @@ export class PineconeService {
     try {
       const index = this.pineconeClient.index(this.indexName);
       
-      const vectors = chunks.map((chunk, i) => ({
-        id: `${chunk.metadata.postId}:${chunk.metadata.chunkType}:${i}`,
-        values: embeddings[i],
-        metadata: {
-          text: chunk.text.slice(0, 1000),
-          bookTitle: chunk.metadata.bookTitle,
-          authorName: chunk.metadata.authorName,
-          reviewerName: chunk.metadata.reviewerName,
-          grade: chunk.metadata.grade,
-          url: chunk.metadata.url,
-          publishDate: chunk.metadata.publishDate,
-          chunkType: chunk.metadata.chunkType,
-          settingTime: chunk.metadata.setting?.time || '',
-          settingLocation: chunk.metadata.setting?.location || '',
-          sensuality: chunk.metadata.sensuality || '',
-          series: chunk.metadata.series ? 'Yes' : 'No',
-        },
-      }));
+      const vectors = chunks.map((chunk, i) => {
+        // Convert comments to simple arrays for Pinecone
+        const commentAuthors = chunk.metadata.comments?.latest?.map((c: { commentAuthor: string }) => c.commentAuthor) || [];
+        const commentContents = chunk.metadata.comments?.latest?.map((c: { commentContent: string }) => c.commentContent) || [];
+
+        return {
+          id: `${chunk.metadata.postId}:${chunk.metadata.chunkType}:${i}`,
+          values: embeddings[i],
+          metadata: {
+            postId: chunk.metadata.postId,
+            title: chunk.metadata.title,
+            text: chunk.text.slice(0, 1000),
+            bookTitle: chunk.metadata.bookTitle,
+            authorName: chunk.metadata.authorName,
+            reviewerName: chunk.metadata.reviewerName,
+            grade: chunk.metadata.grade,
+            url: chunk.metadata.url,
+            amazonUrl: chunk.metadata.amazonUrl || '',
+            asin: chunk.metadata.asin || '',
+            featuredImage: chunk.metadata.featuredImage || '',
+            publishDate: chunk.metadata.publishDate,
+            postDate: chunk.metadata.postDate,
+            chunkType: chunk.metadata.chunkType,
+            sensuality: chunk.metadata.sensuality,
+            bookTypes: chunk.metadata.bookTypes || [],
+            reviewTags: chunk.metadata.reviewTags || [],
+            commentCount: chunk.metadata.comments?.count || 0,
+            commentAuthors,
+            commentContents,
+          } as ReviewMetadata,
+        };
+      });
 
       // Upsert in batches of 100
       const batchSize = 100;

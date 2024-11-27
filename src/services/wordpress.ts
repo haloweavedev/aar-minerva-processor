@@ -1,9 +1,9 @@
+// src/services/wordpress.ts
 import { GraphQLClient } from 'graphql-request';
 import type { BookReview, ProcessedReview } from '../types/wordpress.js';
 
 export class WordPressService {
   private client: GraphQLClient;
-  private lastId: string | null = null;
 
   constructor(baseUrl: string) {
     this.client = new GraphQLClient(`${baseUrl}/graphql`);
@@ -54,6 +54,12 @@ export class WordPressService {
     }
   }
 
+  private extractAsinFromUrl(url: string): string {
+    if (!url) return '';
+    const asinMatch = url.match(/\/([A-Z0-9]{10})(?:\/|\?|$)/);
+    return asinMatch ? asinMatch[1] : '';
+  }
+
   private processReview(review: BookReview): ProcessedReview {
     const metadata = review.bookMetadata;
     const asin = this.extractAsinFromUrl(metadata.amazonUrl || '');
@@ -76,23 +82,14 @@ export class WordPressService {
         sensuality: metadata.bookSensuality,
         publishDate: metadata.publishedDate,
         postDate: review.date,
+        content: review.content,
         bookTypes: metadata.bookTypes || [],
         reviewTags: metadata.reviewTags || [],
-        setting: {
-          time: '',
-          location: ''
-        },
         comments: {
           count: metadata.commentCount,
           latest: metadata.comments || []
         }
       }
     };
-  }
-
-  private extractAsinFromUrl(url: string): string {
-    if (!url) return '';
-    const asinMatch = url.match(/\/([A-Z0-9]{10})(?:\/|\?|$)/);
-    return asinMatch ? asinMatch[1] : '';
   }
 }
